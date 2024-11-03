@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Virtual IoT Lab DEI</title>
+    <link rel="icon" href="https://www.vlab.co.in/images/logo.jpg" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="chart_styles.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <!-- amCharts Resources -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+
+<body>
+    <p class="p-head">Simulation of sending live sensors data on IoT Platform using HTTP Protocols and ESP32
+    </p>
+    
+    <div class="container">
+        <img id="ifimg" src="./src/images/dht_off.gif" alt="interfacing" />
+        <div class="scrollable-box">
+            <pre>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include "DHT.h"
+
+// WiFi credentials
+const char* ssid = "your-SSID";
+const char* password = "your-PASSWORD";
+
+// DHT sensor settings
+#define DHTPIN 4  // Pin where the DHT sensor is connected
+#define DHTTYPE DHT22  // DHT 11 or DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
+
+// Server URL to send data
+const char* serverUrl = "http://your-server-address/endpoint";  // Change to your server URL
+
+void setup() {
+    Serial.begin(115200);
+
+    // Connect to Wi-Fi
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi ");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println();
+    Serial.println("Connected to WiFi");
+
+    // Initialize DHT sensor
+    dht.begin();
+}
+
+void loop() {
+    // Wait a few seconds between measurements
+    delay(2000);
+
+    // Reading temperature and humidity from the DHT sensor
+    float humidity = dht.readHumidity();
+    float temperature = dht.readTemperature();
+
+    // Check if any readings failed
+    if (isnan(humidity) || isnan(temperature)) {
+        Serial.println("Failed to read from DHT sensor!");
+        return;
+    }
+
+    // Print data to serial monitor
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print(" °C, Humidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
+
+    // Send data to HTTP server
+    if(WiFi.status() == WL_CONNECTED) { 
+        HTTPClient http;
+
+        http.begin(serverUrl);  // Specify the server URL
+        http.addHeader("Content-Type", "application/x-www-form-urlencoded");  // Header type
+
+        // Prepare the data to send (temperature and humidity)
+        String postData = "temperature=" + String(temperature) + "&humidity=" + String(humidity);
+
+        // Send HTTP POST request
+        int httpResponseCode = http.POST(postData);
+
+        // Check response
+        if (httpResponseCode > 0) {
+            String response = http.getString();  // Get the response from server
+            Serial.print("HTTP Response code: ");
+            Serial.println(httpResponseCode);
+            Serial.println("Server Response: ");
+            Serial.println(response);
+        } else {
+            Serial.print("Error in sending POST request. HTTP Response code: ");
+            Serial.println(httpResponseCode);
+        }
+
+        // Free resources
+        http.end();
+    } else {
+        Serial.println("WiFi Disconnected");
+    }
+}
+            </pre>
+        </div>
+
+        <h2 id="pushbuttonPower" onclick="changePower();">Start Simulation</h2>
+        
+        <a href="#scroll">Check IoT Server</a>
+    </div>
+
+    <a>
+        <p class="p-head2">After start the simulation, the data will be send to IoT server using HTTP protocol.</p>
+    </a>
+
+    <!-- Main container -->
+    <div class="container2" id="scroll">
+
+        <!-- Header -->
+        <h1>IoT Server</h1>
+
+        <!-- Gauge Charts -->
+        <div class="gauge-container">
+            <div class="gauge-box">
+                <div class="gauge-title">Temperature</div>
+                <div id="gaugeDiv1"></div>
+            </div>
+            <div class="gauge-box">
+                <div class="gauge-title">Humidity</div>
+                <div id="gaugeDiv2"></div>
+            </div>
+        </div>
+
+        <!-- Chart Containers -->
+        <div class="chart-container">
+            <div class="chart-box">
+                <div id="chartdiv1"></div>
+                <div class="chart-title">Temperature</div> <!-- Title below the chart -->
+            </div>
+            <div class="chart-box">
+                <div id="chartdiv2"></div>
+                <div class="chart-title">Humidity</div> <!-- Title below the chart -->
+            </div>
+        </div>
+
+    </div> <!-- End of container2 -->
+
+    <!-- External JavaScript file -->
+    <script type="text/javascript" src="main.js"></script>
+</body>
+</html>
