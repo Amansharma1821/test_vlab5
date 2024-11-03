@@ -166,6 +166,9 @@ am5.ready(function() {
                 addData(series1, 24); // Update temperature chart with fixed value 24
                 addData(series2, 40); // Update humidity chart with fixed value 40
             }, 1000);
+            
+            
+            alert("Data sending using HTTP protocol. Check IoT Server");
         } else {
             image.src = "./src/images/dht_off.gif";
             this.innerHTML = "Start Simulation";

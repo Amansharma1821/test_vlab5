@@ -16,106 +16,18 @@
 </head>
 
 <body>
-    <p class="p-head">Simulation of sending live sensors data on IoT Platform using HTTP Protocols and ESP32
-    </p>
-    
+    <header>
+        <div class="exp-changer">
+          <div class="exp-changer-heading">
+            <p class="p-head">IOT Virtual Lab</p>
+          </div>
+        </div>
+      </header>      
+      
     <div class="container">
         <img id="ifimg" src="./src/images/dht_off.gif" alt="interfacing" />
-        <div class="scrollable-box">
-            <pre>
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include "DHT.h"
-
-// WiFi credentials
-const char* ssid = "your-SSID";
-const char* password = "your-PASSWORD";
-
-// DHT sensor settings
-#define DHTPIN 4  // Pin where the DHT sensor is connected
-#define DHTTYPE DHT22  // DHT 11 or DHT22
-
-DHT dht(DHTPIN, DHTTYPE);
-
-// Server URL to send data
-const char* serverUrl = "http://your-server-address/endpoint";  // Change to your server URL
-
-void setup() {
-    Serial.begin(115200);
-
-    // Connect to Wi-Fi
-    WiFi.begin(ssid, password);
-    Serial.print("Connecting to WiFi ");
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-
-    Serial.println();
-    Serial.println("Connected to WiFi");
-
-    // Initialize DHT sensor
-    dht.begin();
-}
-
-void loop() {
-    // Wait a few seconds between measurements
-    delay(2000);
-
-    // Reading temperature and humidity from the DHT sensor
-    float humidity = dht.readHumidity();
-    float temperature = dht.readTemperature();
-
-    // Check if any readings failed
-    if (isnan(humidity) || isnan(temperature)) {
-        Serial.println("Failed to read from DHT sensor!");
-        return;
-    }
-
-    // Print data to serial monitor
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.print(" °C, Humidity: ");
-    Serial.print(humidity);
-    Serial.println(" %");
-
-    // Send data to HTTP server
-    if(WiFi.status() == WL_CONNECTED) { 
-        HTTPClient http;
-
-        http.begin(serverUrl);  // Specify the server URL
-        http.addHeader("Content-Type", "application/x-www-form-urlencoded");  // Header type
-
-        // Prepare the data to send (temperature and humidity)
-        String postData = "temperature=" + String(temperature) + "&humidity=" + String(humidity);
-
-        // Send HTTP POST request
-        int httpResponseCode = http.POST(postData);
-
-        // Check response
-        if (httpResponseCode > 0) {
-            String response = http.getString();  // Get the response from server
-            Serial.print("HTTP Response code: ");
-            Serial.println(httpResponseCode);
-            Serial.println("Server Response: ");
-            Serial.println(response);
-        } else {
-            Serial.print("Error in sending POST request. HTTP Response code: ");
-            Serial.println(httpResponseCode);
-        }
-
-        // Free resources
-        http.end();
-    } else {
-        Serial.println("WiFi Disconnected");
-    }
-}
-            </pre>
-        </div>
-
+        <textarea readonly cols="30" rows="10" type="text" id="textBox" placeholder="insert the code"></textarea>
         <h2 id="pushbuttonPower" onclick="changePower();">Start Simulation</h2>
-        
         <a href="#scroll">Check IoT Server</a>
     </div>
 
@@ -156,6 +68,80 @@ void loop() {
     </div> <!-- End of container2 -->
 
     <!-- External JavaScript file -->
+    <script>
+        // for insert code
+        function insertled() {
+          var serv = (document.getElementById(
+            "textBox"
+          ).value = `#include <WiFi.h>
+#include <HTTPClient.h>
+#include "DHT.h"
+
+// Replace with your network credentials
+const char* ssid = "iotvlab";
+const char* password = "iotvlab123";
+
+// Replace with your ThingSpeak API key
+String apiKey = "VLEIWMHH82MLCBD";
+
+// ThingSpeak server
+const char* server = "api.thingspeak.com";
+
+// DHT11 sensor configuration
+#define DHTPIN 4  // Digital pin connected to the DHT11 sensor
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+Serial.begin(115200);
+WiFi.begin(ssid, password);
+dht.begin();
+
+Serial.print("Connecting to WiFi");
+while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+}
+Serial.println();
+Serial.println("WiFi connected");
+}
+
+void loop() {
+if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    float temperature = dht.readTemperature();
+    float humidity = dht.readHumidity();
+
+    if (isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+    }
+
+    String url = "http://api.thingspeak.com/update?api_key=" + apiKey + "&field1=" + String(temperature) + "&field2=" + String(humidity);
+
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode > 0) {
+    String payload = http.getString();
+    Serial.println("Data sent to ThingSpeak: " + payload);
+    } else {
+    Serial.println("Error in sending data to ThingSpeak");
+    }
+
+    http.end();
+} else {
+    Serial.println("WiFi not connected");
+}
+
+// ThingSpeak allows updates every 15 seconds
+delay(15000);
+}
+  `);
+        }
+        insertled();
+      </script>
     <script type="text/javascript" src="main.js"></script>
 </body>
 </html>
